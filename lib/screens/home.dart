@@ -17,6 +17,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   static const int _maxPlaylists = 5;
+  static const int _playlistPageSize = 10;
 
   final MainServices _services = MainServices();
   final CarouselSliderController _carouselController =
@@ -126,11 +127,7 @@ class _HomePageState extends State<HomePage> {
         } else {
           _videosPlaylist[playlistId] = movies;
         }
-        // movies.length<=_playlistLimit
-
-        // _loadMore[playlistId] = movies.length >= _playlistLimit;
-        // _loadMore[playlistId] = movies.length > 0;
-        // _loadMore[playlistId]=! (_videosPlaylist[playlistId].length>=num_found);
+        _loadMore[playlistId] = movies.length >= _playlistPageSize;
         _loadingPlaylistMovies.remove(playlistId);
       });
     } catch (_) {
