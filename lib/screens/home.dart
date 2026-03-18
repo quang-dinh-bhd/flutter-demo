@@ -5,7 +5,6 @@ import '../services/main_services.dart';
 import '../widgets/home/home_hero_carousel.dart';
 import '../widgets/home/home_menu_bar.dart';
 import '../widgets/home/home_playlists.dart';
-import '../widgets/home/home_playlists_section.dart';
 
 class HomePage extends StatefulWidget {
   final List<dynamic> menuItems;
@@ -193,6 +192,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final shownPlaylists = _playlists.length > _maxPlaylists
+        ? _playlists.take(_maxPlaylists).toList()
+        : _playlists;
+
     return Scaffold(
       appBar: AppBar(title: const Text("DANET")),
       body: SingleChildScrollView(
@@ -210,11 +213,10 @@ class _HomePageState extends State<HomePage> {
               onIndexChanged: (i) => setState(() => _carouselIndex = i),
               normalizeImageUrl: _cleanUrl,
             ),
-            HomePlaylistsSection(
+            HomePlaylists(
               isLoading: _isLoadingPlaylists,
               currentModuleId: _currentModuleId,
-              playlists: _playlists,
-              maxPlaylists: _maxPlaylists,
+              playlists: shownPlaylists,
               playlistMovies: _videosPlaylist,
               loadingPlaylistMovies: _loadingPlaylistMovies,
               loadMore: _loadMore,
