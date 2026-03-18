@@ -145,9 +145,8 @@ class _PlaylistSectionState extends State<_PlaylistSection> {
         else
           HomeVideosPlaylist(
             playlistId: playlistId,
-            hasMore: widget.hasMore,
+            infiniteLoop: infiniteLoop,
             isLoading: isLoadingMovies,
-            loopToStart: infiniteLoop,
             movies: movies,
             onLoadMore: widget.onLoadMore,
             normalizeImageUrl: widget.normalizeImageUrl,
@@ -156,4 +155,3 @@ class _PlaylistSectionState extends State<_PlaylistSection> {
     );
   }
 }
-
