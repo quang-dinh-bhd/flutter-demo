@@ -52,11 +52,11 @@ class _HomePageState extends State<HomePage> {
         .toString();
   }
 
-  Future<void> _getFeaturedVideos(String moduleId) async {
+  Future<void> _getCarousel(String moduleId) async {
     if (moduleId.isEmpty) return;
     setState(() => _isLoadingCarousel = true);
     try {
-      final results = await _services.getFeaturedVideos(moduleId);
+      final results = await _services.getCarousel(moduleId);
       if (!mounted) return;
       setState(() {
         _carouselList = results;
@@ -166,7 +166,7 @@ class _HomePageState extends State<HomePage> {
   void _selectModule(String moduleId) {
     if (moduleId.isEmpty) return;
     _currentModuleId = moduleId;
-    _getFeaturedVideos(moduleId);
+    _getCarousel(moduleId);
     _getPlaylists(moduleId);
   }
 

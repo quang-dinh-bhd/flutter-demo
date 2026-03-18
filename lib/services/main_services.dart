@@ -46,7 +46,7 @@ class MainServices {
     }
   }
 
-  Future<List<dynamic>> getFeaturedVideos(String moduleId) async {
+  Future<List<dynamic>> getCarousel(String moduleId) async {
     try {
       final response = await http.get(
         Uri.parse(
