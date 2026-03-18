@@ -53,59 +53,7 @@ class HomeHeroCarousel extends StatelessWidget {
             ),
             items: items.map<Widget>(_buildSlide).toList(),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SizedBox(
-              height: 120,
-              child: ListView.separated(
-                padding: EdgeInsets.zero,
-                scrollDirection: Axis.horizontal,
-                itemCount: items.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 12),
-                itemBuilder: (context, idx) => _buildThumb(items[idx], idx),
-              ),
-            ),
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildThumb(dynamic item, int idx) {
-    final String tUrl = normalizeImageUrl(
-      item is Map ? (item['vertical_banner'] ?? '').toString() : '',
-    );
-    final bool active = idx == currentIndex;
-
-    return InkWell(
-      onTap: () => controller.animateToPage(idx),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        width: 190,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: active ? Colors.red : Colors.transparent,
-            width: 2,
-          ),
-          color: Colors.black26,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: tUrl.isNotEmpty
-            ? Image.network(
-                tUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const ColoredBox(
-                  color: Colors.black26,
-                  child: Center(child: Icon(Icons.broken_image)),
-                ),
-              )
-            : const ColoredBox(
-                color: Colors.black26,
-                child: Center(child: Icon(Icons.image_not_supported)),
-              ),
       ),
     );
   }
