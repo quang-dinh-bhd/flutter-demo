@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../services/main_services.dart';
 import 'package:danet/screens/home.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -26,90 +24,59 @@ class _SplashScreenState extends State<SplashScreen> {
     await _checkVersion();
   }
 
-  Future<String> _getDeviceId() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? deviceId = prefs.getString('device_id');
-    if (deviceId == null) {
-      deviceId = const Uuid().v4().toUpperCase();
-      await prefs.setString('device_id', deviceId);
-    }
-    return deviceId;
-  }
-
   Future<void> _checkVersion() async {
     try {
-      String deviceId = await _getDeviceId();
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
       int currentVersion =
           int.tryParse(packageInfo.version.replaceAll('.', '')) ?? 0;
 
-      final latestData = await _services.getLatestRelease(deviceId);
+      final latestData = await _services.getLatestRelease();
       if (latestData == null) throw Exception("Không thể kết nối API");
 
       int latestVersion = latestData['version'];
       // int latestVersion = 6406;
       int isRequired = latestData['is_required'] ?? 0;
       // int isRequired = 1;
-      bool versionExists = await _services.checkVersionExists(
-        currentVersion,
-        deviceId,
-      );
+      bool versionExists = await _services.checkVersionExists(currentVersion);
 
       if (currentVersion == latestVersion ||
           (currentVersion > latestVersion && versionExists)) {
-        _fetchMenuAndGoHome(deviceId);
+        _fetchMenuAndGoHome();
       } else if (currentVersion < latestVersion) {
         if (!versionExists) {
-          _showPopup(
-            "Phiên bản không hợp lệ",
-            exitOnly: true,
-            deviceId: deviceId,
-          );
+          _showPopup("Phiên bản không hợp lệ", exitOnly: true);
         } else {
           _showPopup(
             "Đã có phiên bản mới, bạn vui lòng nâng cấp ứng dụng nhé!",
             exitOnly: (isRequired == 1),
-            deviceId: deviceId,
           );
         }
       } else {
-        _showPopup(
-          "Phiên bản không hợp lệ",
-          exitOnly: true,
-          deviceId: deviceId,
-        );
+        _showPopup("Phiên bản không hợp lệ", exitOnly: true);
       }
     } catch (e) {
-      _showPopup("Lỗi hệ thống: $e", exitOnly: true, deviceId: "");
+      _showPopup("Lỗi hệ thống: $e", exitOnly: true);
     }
   }
 
-  Future<void> _fetchMenuAndGoHome(String deviceId) async {
+  Future<void> _fetchMenuAndGoHome() async {
     try {
-      final items = await _services.getMenu(deviceId);
+      final items = await _services.getMenu();
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => HomePage(menuItems: items, deviceId: deviceId),
-        ),
+        MaterialPageRoute(builder: (context) => HomePage(menuItems: items)),
       );
     } catch (e) {
       debugPrint("Lỗi lấy menu: $e");
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const HomePage(menuItems: [], deviceId: ""),
-        ),
+        MaterialPageRoute(builder: (context) => const HomePage(menuItems: [])),
       );
     }
   }
 
-  void _showPopup(
-    String message, {
-    required bool exitOnly,
-    required String deviceId,
-  }) {
+  void _showPopup(String message, {required bool exitOnly}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -119,7 +86,7 @@ class _SplashScreenState extends State<SplashScreen> {
         actions: [
           if (!exitOnly)
             TextButton(
-              onPressed: () => _fetchMenuAndGoHome(deviceId),
+              onPressed: () => _fetchMenuAndGoHome(),
               child: const Text("Bỏ qua"),
             ),
           TextButton(

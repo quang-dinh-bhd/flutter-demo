@@ -5,12 +5,12 @@ import '../services/main_services.dart';
 import '../widgets/home/home_hero_carousel.dart';
 import '../widgets/home/home_menu_bar.dart';
 import '../widgets/home/home_playlists.dart';
+import '../widgets/home/home_playlists_section.dart';
 
 class HomePage extends StatefulWidget {
   final List<dynamic> menuItems;
-  final String deviceId;
 
-  const HomePage({super.key, required this.menuItems, required this.deviceId});
+  const HomePage({super.key, required this.menuItems});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -18,7 +18,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   static const int _maxPlaylists = 5;
-  static const int _playlistLimit = 10;
 
   final MainServices _services = MainServices();
   final CarouselSliderController _carouselController =
@@ -57,10 +56,7 @@ class _HomePageState extends State<HomePage> {
     if (moduleId.isEmpty) return;
     setState(() => _isLoadingCarousel = true);
     try {
-      final results = await _services.getFeaturedVideos(
-        widget.deviceId,
-        moduleId,
-      );
+      final results = await _services.getFeaturedVideos(moduleId);
       if (!mounted) return;
       setState(() {
         _carouselList = results;
@@ -77,7 +73,7 @@ class _HomePageState extends State<HomePage> {
     if (moduleId.isEmpty) return;
     setState(() => _isLoadingPlaylists = true);
     try {
-      final results = await _services.getPlaylists(widget.deviceId, moduleId);
+      final results = await _services.getPlaylists(moduleId);
       if (!mounted) return;
       setState(() {
         _playlists = results;
@@ -120,11 +116,7 @@ class _HomePageState extends State<HomePage> {
     _loadingPlaylistMovies.add(playlistId);
     if (mounted) setState(() {});
     try {
-      final movies = await _services.getVideosByPlaylist(
-        widget.deviceId,
-        playlistId,
-        page,
-      );
+      final movies = await _services.getVideosByPlaylist(playlistId, page);
       if (!mounted) return;
       setState(() {
         if (append && _videosPlaylist[playlistId] != null) {
@@ -201,10 +193,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final shownPlaylists = _playlists.length > _maxPlaylists
-        ? _playlists.take(_maxPlaylists).toList()
-        : _playlists;
-
     return Scaffold(
       appBar: AppBar(title: const Text("DANET")),
       body: SingleChildScrollView(
@@ -222,10 +210,11 @@ class _HomePageState extends State<HomePage> {
               onIndexChanged: (i) => setState(() => _carouselIndex = i),
               normalizeImageUrl: _cleanUrl,
             ),
-            HomePlaylists(
+            HomePlaylistsSection(
               isLoading: _isLoadingPlaylists,
               currentModuleId: _currentModuleId,
-              playlists: shownPlaylists,
+              playlists: _playlists,
+              maxPlaylists: _maxPlaylists,
               playlistMovies: _videosPlaylist,
               loadingPlaylistMovies: _loadingPlaylistMovies,
               loadMore: _loadMore,

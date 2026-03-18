@@ -92,6 +92,7 @@ class _PlaylistSection extends StatefulWidget {
   final String Function(String url) normalizeImageUrl;
 
   const _PlaylistSection({
+    super.key,
     required this.playlist,
     required this.movies,
     required this.isLoadingMovies,
@@ -117,8 +118,9 @@ class _PlaylistSectionState extends State<_PlaylistSection> {
     final String name = playlist is Map
         ? (playlist['name'] ?? playlist['title'] ?? '').toString()
         : playlist.toString();
-    final String playlistId =
-        playlist is Map ? (playlist['id']?.toString() ?? '') : '';
+    final String playlistId = playlist is Map
+        ? (playlist['id']?.toString() ?? '')
+        : '';
     final bool infiniteLoop = (playlist is Map)
         ? ((playlist['is_infinite_loop']?.toString() ?? '0') == '1')
         : false;
