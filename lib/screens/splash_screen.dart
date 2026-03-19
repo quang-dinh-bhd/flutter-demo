@@ -34,9 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (latestData == null) throw Exception("Không thể kết nối API");
 
       int latestVersion = latestData['version'];
-      // int latestVersion = 6406;
       int isRequired = latestData['is_required'] ?? 0;
-      // int isRequired = 1;
       bool versionExists = await _services.checkVersionExists(currentVersion);
 
       if (currentVersion == latestVersion ||

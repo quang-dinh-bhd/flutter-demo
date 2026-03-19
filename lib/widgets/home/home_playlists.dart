@@ -9,7 +9,7 @@ class HomePlaylists extends StatelessWidget {
   final Map<String, List<dynamic>> playlistMovies;
   final Set<String> loadingPlaylistMovies;
   final Map<String, bool> loadMore;
-  final ValueChanged<String> onLoadMore;
+  final Future<void> Function(String) onLoadMore;
   final String Function(String url) normalizeImageUrl;
 
   const HomePlaylists({
@@ -57,7 +57,9 @@ class HomePlaylists extends StatelessWidget {
         final playlist = playlists[index];
         final id = playlist is Map ? (playlist['id']?.toString() ?? '') : '';
         return _PlaylistSection(
-          key: id.isNotEmpty ? ValueKey('playlist-$id') : null,
+          key: id.isNotEmpty
+              ? ValueKey('playlist-$id-${playlistMovies[id]?.length ?? 0}')
+              : null,
           playlist: playlist,
           movies: _getMovies(playlist),
           isLoadingMovies: _isLoadingMovies(playlist),
@@ -90,7 +92,7 @@ class _PlaylistSection extends StatefulWidget {
   final List<dynamic>? movies;
   final bool isLoadingMovies;
   final bool hasMore;
-  final ValueChanged<String> onLoadMore;
+  final Future<void> Function(String) onLoadMore;
   final String Function(String url) normalizeImageUrl;
 
   const _PlaylistSection({
@@ -136,13 +138,8 @@ class _PlaylistSectionState extends State<_PlaylistSection> {
           const SizedBox(
             height: 120,
             child: Center(child: CircularProgressIndicator()),
-          )
-        else if (movies == null || movies.isEmpty)
-          const SizedBox(
-            height: 120,
-            child: Center(child: Text("Không có video")),
-          )
-        else
+          ),
+        if (movies != null && movies.isNotEmpty)
           HomeVideosPlaylist(
             playlistId: playlistId,
             infiniteLoop: infiniteLoop,

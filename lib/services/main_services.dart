@@ -46,11 +46,11 @@ class MainServices {
     }
   }
 
-  Future<List<dynamic>> getCarousel(String moduleId) async {
+  Future<List<dynamic>> getCarousel(String moduleId, {int page = 1, int limit = 20}) async {
     try {
       final response = await http.get(
         Uri.parse(
-          '${ApiConstants.baseUrl}/carousels?module_id=$moduleId&page=1&limit=20',
+          '${ApiConstants.baseUrl}/carousels?module_id=$moduleId&page=$page&limit=$limit',
         ),
         headers: ApiConstants.getHeaders(),
       );

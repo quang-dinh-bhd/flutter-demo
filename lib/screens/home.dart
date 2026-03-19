@@ -17,25 +17,22 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   static const int _maxPlaylists = 5;
-  static const int _playlistPageSize = 10;
-
   final MainServices _services = MainServices();
   final CarouselSliderController _carouselController =
       CarouselSliderController();
 
-  List<dynamic> _carouselList = [];
-  bool _isLoadingCarousel = false;
+  Map<String, dynamic> _data = {
+    'carouselList': [],
+    'playlists': [],
+    'videosPlaylist': <String, List<dynamic>>{},
+    'loadingPlaylistMovies': <String>{},
+    'playlistPage': <String, int>{},
+    'loadMore': <String, bool>{},
+    'playlistInfiniteLoop': <String>{},
+    'currentModuleId': '',
+  };
   int _carouselIndex = 0;
-
-  String _currentModuleId = '';
-  List<dynamic> _playlists = [];
-  bool _isLoadingPlaylists = false;
-
-  final Map<String, List<dynamic>> _videosPlaylist = {};
-  final Set<String> _loadingPlaylistMovies = {};
-  final Map<String, int> _playlistPage = {};
-  final Map<String, bool> _loadMore = {};
-  final Set<String> _playlistInfiniteLoop = {};
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -54,45 +51,42 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _getCarousel(String moduleId) async {
     if (moduleId.isEmpty) return;
-    setState(() => _isLoadingCarousel = true);
+    setState(() => _isLoading = true);
     try {
-      final results = await _services.getCarousel(moduleId);
+      final results = await _services.getCarousel(moduleId, page: 1, limit: 20);
       if (!mounted) return;
       setState(() {
-        _carouselList = results;
-        _isLoadingCarousel = false;
+        _data['carouselList'] = results;
+        _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingCarousel = false);
-      debugPrint("Lỗi tải carousel: ${e.toString()}");
+      setState(() => _isLoading = false);
+      debugPrint("Lỗi tải carousel: \\${e.toString()}");
     }
   }
 
   Future<void> _getPlaylists(String moduleId) async {
     if (moduleId.isEmpty) return;
-    setState(() => _isLoadingPlaylists = true);
+    setState(() => _isLoading = true);
     try {
       final results = await _services.getPlaylists(moduleId);
       if (!mounted) return;
       setState(() {
-        _playlists = results;
-        _isLoadingPlaylists = false;
+        _data['playlists'] = results;
+        _isLoading = false;
+        _data['playlistInfiniteLoop'] = results
+            .whereType<Map>()
+            .where((p) => (p['is_infinite_loop']?.toString() ?? '0') == '1')
+            .map((p) => (p['id']?.toString() ?? ''))
+            .where((id) => id.isNotEmpty)
+            .toSet();
       });
-      _playlistInfiniteLoop
-        ..clear()
-        ..addAll(
-          results
-              .whereType<Map>()
-              .where((p) => (p['is_infinite_loop']?.toString() ?? '0') == '1')
-              .map((p) => (p['id']?.toString() ?? ''))
-              .where((id) => id.isNotEmpty),
-        );
       _getVideosByPlaylistId(results);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingPlaylists = false);
-      debugPrint("Lỗi tải playlists: ${e.toString()}");
+      setState(() => _isLoading = false);
+      debugPrint("Lỗi tải playlists: \\${e.toString()}");
     }
   }
 
@@ -100,8 +94,8 @@ class _HomePageState extends State<HomePage> {
     for (final p in playlists) {
       final String id = p is Map ? (p['id']?.toString() ?? '') : '';
       if (id.isEmpty) continue;
-      _playlistPage[id] = 1;
-      _loadMore[id] = true;
+      _data['playlistPage'][id] = 1;
+      _data['loadMore'][id] = true;
       _fetchVideosForPlaylist(id, page: 1, append: false);
     }
   }
@@ -112,60 +106,56 @@ class _HomePageState extends State<HomePage> {
     required bool append,
   }) async {
     if (playlistId.isEmpty) return;
-    if (_loadingPlaylistMovies.contains(playlistId)) return;
-    _loadingPlaylistMovies.add(playlistId);
+    if (_data['loadingPlaylistMovies'].contains(playlistId)) return;
+    _data['loadingPlaylistMovies'].add(playlistId);
     if (mounted) setState(() {});
     try {
       final movies = await _services.getVideosByPlaylist(playlistId, page);
       if (!mounted) return;
       setState(() {
-        if (append && _videosPlaylist[playlistId] != null) {
-          _videosPlaylist[playlistId] = [
-            ..._videosPlaylist[playlistId]!,
+        if (append && _data['videosPlaylist'][playlistId] != null) {
+          _data['videosPlaylist'][playlistId] = [
+            ..._data['videosPlaylist'][playlistId]!,
             ...movies,
           ];
         } else {
-          _videosPlaylist[playlistId] = movies;
+          _data['videosPlaylist'][playlistId] = movies;
         }
-        _loadMore[playlistId] = movies.length >= _playlistPageSize;
-        _loadingPlaylistMovies.remove(playlistId);
+        _data['loadMore'][playlistId] = movies.length >= 10;
+        _data['loadingPlaylistMovies'].remove(playlistId);
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _videosPlaylist[playlistId] = const [];
-        _loadMore[playlistId] = false;
-        _loadingPlaylistMovies.remove(playlistId);
+        _data['videosPlaylist'][playlistId] = const [];
+        _data['loadMore'][playlistId] = false;
+        _data['loadingPlaylistMovies'].remove(playlistId);
       });
     }
   }
 
-  void _loadMoreForPlaylist(String playlistId) {
+  Future<void> _loadMoreForPlaylist(String playlistId) async {
     if (playlistId.isEmpty) return;
-
-    if (_loadingPlaylistMovies.contains(playlistId)) return;
-    // false
-    final hasMore = _loadMore[playlistId] ?? true;
-    final infinite = _playlistInfiniteLoop.contains(playlistId);
-
-    // if (!hasMore) {
-    if (_videosPlaylist[playlistId] == null) {
+    if (_data['loadingPlaylistMovies'].contains(playlistId)) return;
+    final hasMore = _data['loadMore'][playlistId] ?? true;
+    final infinite = _data['playlistInfiniteLoop'].contains(playlistId);
+    if (_data['videosPlaylist'][playlistId] == null) {
       if (!infinite) return;
-      _playlistPage[playlistId] = 1;
-      _loadMore[playlistId] = true;
+      _data['playlistPage'][playlistId] = 1;
+      _data['loadMore'][playlistId] = true;
       _fetchVideosForPlaylist(playlistId, page: 1, append: false);
       return;
     }
     if (hasMore) {
-      final nextPage = (_playlistPage[playlistId] ?? 1) + 1;
-      _playlistPage[playlistId] = nextPage;
+      final nextPage = (_data['playlistPage'][playlistId] ?? 1) + 1;
+      _data['playlistPage'][playlistId] = nextPage;
       _fetchVideosForPlaylist(playlistId, page: nextPage, append: true);
     }
   }
 
   void _selectModule(String moduleId) {
     if (moduleId.isEmpty) return;
-    _currentModuleId = moduleId;
+    _data['currentModuleId'] = moduleId;
     _getCarousel(moduleId);
     _getPlaylists(moduleId);
   }
@@ -175,23 +165,23 @@ class _HomePageState extends State<HomePage> {
     if (moduleId.isEmpty) return;
     setState(() {
       _carouselIndex = 0;
-      _currentModuleId = moduleId;
-      _carouselList = [];
-      _playlists = [];
-      _videosPlaylist.clear();
-      _loadingPlaylistMovies.clear();
-      _playlistPage.clear();
-      _loadMore.clear();
-      _playlistInfiniteLoop.clear();
+      _data['currentModuleId'] = moduleId;
+      _data['carouselList'] = [];
+      _data['playlists'] = [];
+      _data['videosPlaylist'].clear();
+      _data['loadingPlaylistMovies'].clear();
+      _data['playlistPage'].clear();
+      _data['loadMore'].clear();
+      _data['playlistInfiniteLoop'].clear();
     });
     _selectModule(moduleId);
   }
 
   @override
   Widget build(BuildContext context) {
-    final shownPlaylists = _playlists.length > _maxPlaylists
-        ? _playlists.take(_maxPlaylists).toList()
-        : _playlists;
+    final shownPlaylists = (_data['playlists'] as List).length > _maxPlaylists
+        ? (_data['playlists'] as List).take(_maxPlaylists).toList()
+        : _data['playlists'];
 
     return Scaffold(
       appBar: AppBar(title: const Text("DANET")),
@@ -203,20 +193,20 @@ class _HomePageState extends State<HomePage> {
               onSelectItem: _selectModuleFromItem,
             ),
             HomeHeroCarousel(
-              isLoading: _isLoadingCarousel,
-              items: _carouselList,
+              isLoading: _isLoading,
+              items: _data['carouselList'],
               currentIndex: _carouselIndex,
               controller: _carouselController,
               onIndexChanged: (i) => setState(() => _carouselIndex = i),
               normalizeImageUrl: _cleanUrl,
             ),
             HomePlaylists(
-              isLoading: _isLoadingPlaylists,
-              currentModuleId: _currentModuleId,
+              isLoading: _isLoading,
+              currentModuleId: _data['currentModuleId'],
               playlists: shownPlaylists,
-              playlistMovies: _videosPlaylist,
-              loadingPlaylistMovies: _loadingPlaylistMovies,
-              loadMore: _loadMore,
+              playlistMovies: _data['videosPlaylist'],
+              loadingPlaylistMovies: _data['loadingPlaylistMovies'],
+              loadMore: _data['loadMore'],
               onLoadMore: _loadMoreForPlaylist,
               normalizeImageUrl: _cleanUrl,
             ),
