@@ -107,7 +107,7 @@ class HomePlaylistsState extends State<HomePlaylists> {
       });
 
       for (final p in newItems) {
-        _fetchVideos(p);
+        await _fetchVideos(p);
       }
     } catch (e) {
       if (!mounted || widget.moduleId != currentModule) return;

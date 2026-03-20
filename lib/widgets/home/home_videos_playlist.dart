@@ -29,10 +29,16 @@ class _HomeVideosPlaylistState extends State<HomeVideosPlaylist> {
   static const double _separatorWidth = 10.0;
   static const double _itemFullWidth = _itemWidth + _separatorWidth;
 
-  static const int _multiplier = 20;
+  static const int _multiplier = 3;
+  static const int _minMoviesForLoop = 3;
 
   bool _isJumping = false;
   bool _isPreloading = false;
+
+  bool get _shouldLoop =>
+      widget.infiniteLoop &&
+      !widget.hasMore &&
+      widget.movies.length >= _minMoviesForLoop;
 
   @override
   void initState() {
@@ -41,7 +47,7 @@ class _HomeVideosPlaylistState extends State<HomeVideosPlaylist> {
     _controller.addListener(_handleLoopScroll);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _jumpToMiddle();
+      if (_shouldLoop) _jumpToMiddle();
     });
   }
 
@@ -49,17 +55,29 @@ class _HomeVideosPlaylistState extends State<HomeVideosPlaylist> {
   void didUpdateWidget(covariant HomeVideosPlaylist oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.movies.length != widget.movies.length) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    final oldShouldLoop =
+        oldWidget.infiniteLoop &&
+        !oldWidget.hasMore &&
+        oldWidget.movies.length >= _minMoviesForLoop;
+    final newShouldLoop = _shouldLoop;
+
+    if (oldShouldLoop == newShouldLoop) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_controller.hasClients) return;
+
+      if (newShouldLoop) {
         _jumpToMiddle();
-      });
-    }
+      } else {
+        _controller.jumpTo(0);
+      }
+    });
   }
 
   void _jumpToMiddle() {
     if (!_controller.hasClients || widget.movies.isEmpty) return;
 
-    if (!widget.infiniteLoop) {
+    if (!_shouldLoop) {
       _controller.jumpTo(0);
       return;
     }
@@ -71,7 +89,7 @@ class _HomeVideosPlaylistState extends State<HomeVideosPlaylist> {
   }
 
   void _handleLoopScroll() {
-    if (!widget.infiniteLoop ||
+    if (!_shouldLoop ||
         !_controller.hasClients ||
         widget.movies.isEmpty ||
         _isJumping) {
@@ -80,22 +98,20 @@ class _HomeVideosPlaylistState extends State<HomeVideosPlaylist> {
 
     final offset = _controller.offset;
     final singleSetWidth = widget.movies.length * _itemFullWidth;
-    final totalWidth = singleSetWidth * _multiplier;
+    if (singleSetWidth <= 0) return;
+
+    const threshold = 200.0;
+
+    final maxScrollExtent = _controller.position.maxScrollExtent;
+    final shouldJump =
+        offset <= threshold || offset >= maxScrollExtent - threshold;
+
+    if (!shouldJump) return;
 
     final middleIndex = (widget.movies.length * _multiplier) ~/ 2;
     final middleOffset = middleIndex * _itemFullWidth;
 
-    const threshold = 200.0;
-
-    if (offset <= threshold) {
-      _jump(offset, singleSetWidth, middleOffset);
-      return;
-    }
-
-    if (offset >= totalWidth - threshold) {
-      _jump(offset, singleSetWidth, middleOffset);
-      return;
-    }
+    _jump(offset, singleSetWidth, middleOffset);
   }
 
   void _jump(double offset, double singleSetWidth, double middleOffset) {
@@ -106,7 +122,9 @@ class _HomeVideosPlaylistState extends State<HomeVideosPlaylist> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_controller.hasClients) {
-        _controller.jumpTo(targetOffset);
+        final min = _controller.position.minScrollExtent;
+        final max = _controller.position.maxScrollExtent;
+        _controller.jumpTo(targetOffset.clamp(min, max));
       }
       _isJumping = false;
     });
@@ -125,12 +143,9 @@ class _HomeVideosPlaylistState extends State<HomeVideosPlaylist> {
       return const SizedBox(height: 220);
     }
 
-    final List<dynamic> displayList = widget.infiniteLoop
-        ? List.generate(
-            _multiplier,
-            (_) => widget.movies,
-          ).expand((e) => e).toList()
-        : widget.movies;
+    final int itemCount = _shouldLoop
+        ? widget.movies.length * _multiplier
+        : widget.movies.length;
 
     return SizedBox(
       height: 220,
@@ -159,11 +174,13 @@ class _HomeVideosPlaylistState extends State<HomeVideosPlaylist> {
           controller: _controller,
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          itemCount: displayList.length,
+          itemCount: itemCount,
           separatorBuilder: (context, index) =>
               const SizedBox(width: _separatorWidth),
           itemBuilder: (context, index) {
-            return _MovieCard(item: displayList[index]);
+            final movie = widget
+                .movies[_shouldLoop ? index % widget.movies.length : index];
+            return _MovieCard(item: movie);
           },
         ),
       ),
