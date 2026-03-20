@@ -46,7 +46,11 @@ class MainServices {
     }
   }
 
-  Future<List<dynamic>> getCarousel(String moduleId, {int page = 1, int limit = 20}) async {
+  Future<List<dynamic>> getCarousel(
+    String moduleId, {
+    int page = 1,
+    int limit = 10,
+  }) async {
     try {
       final response = await http.get(
         Uri.parse(
@@ -66,11 +70,15 @@ class MainServices {
     }
   }
 
-  Future<List<dynamic>> getPlaylists(String moduleId) async {
+  Future<List<dynamic>> getPlaylists(
+    String moduleId, {
+    int page = 1,
+    int limit = 10,
+  }) async {
     try {
       final response = await http.get(
         Uri.parse(
-          '${ApiConstants.baseUrl}/movie-playlists?module_id=$moduleId&page=1&limit=10',
+          '${ApiConstants.baseUrl}/movie-playlists?module_id=$moduleId&page=$page&limit=$limit',
         ),
         headers: ApiConstants.getHeaders(),
       );
@@ -86,11 +94,15 @@ class MainServices {
     }
   }
 
-  Future<List<dynamic>> getVideosByPlaylist(String playlistId, int page) async {
+  Future<List<dynamic>> getVideosByPlaylist(
+    String playlistId, {
+    int page = 1,
+    int limit = 10,
+  }) async {
     try {
       final response = await http.get(
         Uri.parse(
-          '${ApiConstants.baseUrl}/movie-playlists/$playlistId/movies?page=$page&limit=10',
+          '${ApiConstants.baseUrl}/movie-playlists/$playlistId/movies?page=$page&limit=$limit',
         ),
         headers: ApiConstants.getHeaders(),
       );
