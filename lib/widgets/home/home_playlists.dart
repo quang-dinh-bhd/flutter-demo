@@ -12,10 +12,10 @@ class HomePlaylists extends StatefulWidget {
   const HomePlaylists({super.key, required this.moduleId});
 
   @override
-  HomePlaylistsState createState() => HomePlaylistsState();
+  PlaylistsState createState() => PlaylistsState();
 }
 
-class HomePlaylistsState extends State<HomePlaylists> {
+class PlaylistsState extends State<HomePlaylists> {
   final MainServices _services = MainServices();
 
   LoadState _state = LoadState.initial;
@@ -99,10 +99,14 @@ class HomePlaylistsState extends State<HomePlaylists> {
           if (newItems.isEmpty) {
             _state = LoadState.empty;
           } else {
-            _state = newItems.length >= pageLimit ? LoadState.success : LoadState.end;
+            _state = newItems.length >= pageLimit
+                ? LoadState.success
+                : LoadState.end;
           }
         } else {
-          _state = newItems.length >= pageLimit ? LoadState.success : LoadState.end;
+          _state = newItems.length >= pageLimit
+              ? LoadState.success
+              : LoadState.end;
         }
       });
 

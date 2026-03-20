@@ -4,6 +4,9 @@ import '../constants/api_constants.dart';
 import 'package:flutter/material.dart';
 
 class MainServices {
+  static int page = 1;
+  static int limit = 10;
+
   Future<Map<String, dynamic>?> getLatestRelease() async {
     try {
       final response = await http.get(
@@ -48,13 +51,13 @@ class MainServices {
 
   Future<List<dynamic>> getCarousel(
     String moduleId, {
-    int page = 1,
-    int limit = 10,
+    int? page,
+    int? limit,
   }) async {
     try {
       final response = await http.get(
         Uri.parse(
-          '${ApiConstants.baseUrl}/carousels?module_id=$moduleId&page=$page&limit=$limit',
+          '${ApiConstants.baseUrl}/carousels?module_id=$moduleId&page=${page ?? MainServices.page}&limit=${limit ?? MainServices.limit}',
         ),
         headers: ApiConstants.getHeaders(),
       );
@@ -72,13 +75,13 @@ class MainServices {
 
   Future<List<dynamic>> getPlaylists(
     String moduleId, {
-    int page = 1,
-    int limit = 10,
+    int? page,
+    int? limit,
   }) async {
     try {
       final response = await http.get(
         Uri.parse(
-          '${ApiConstants.baseUrl}/movie-playlists?module_id=$moduleId&page=$page&limit=$limit',
+          '${ApiConstants.baseUrl}/movie-playlists?module_id=$moduleId&page=${page ?? MainServices.page}&limit=${limit ?? MainServices.limit}',
         ),
         headers: ApiConstants.getHeaders(),
       );
@@ -96,13 +99,13 @@ class MainServices {
 
   Future<List<dynamic>> getVideosByPlaylist(
     String playlistId, {
-    int page = 1,
-    int limit = 10,
+    int? page,
+    int? limit,
   }) async {
     try {
       final response = await http.get(
         Uri.parse(
-          '${ApiConstants.baseUrl}/movie-playlists/$playlistId/movies?page=$page&limit=$limit',
+          '${ApiConstants.baseUrl}/movie-playlists/$playlistId/movies?page=${page ?? MainServices.page}&limit=${limit ?? MainServices.limit}',
         ),
         headers: ApiConstants.getHeaders(),
       );

@@ -18,29 +18,22 @@ class HomePage extends StatelessWidget {
     final initialModuleId = menuItems.isNotEmpty
         ? _getModuleId(menuItems[0])
         : '';
-    return _HomePageScaffold(
-      menuItems: menuItems,
-      initialModuleId: initialModuleId,
-    );
+    return _HomePage(menuItems: menuItems, initialModuleId: initialModuleId);
   }
 }
 
-class _HomePageScaffold extends StatefulWidget {
+class _HomePage extends StatefulWidget {
   final List<dynamic> menuItems;
   final String initialModuleId;
 
-  const _HomePageScaffold({
-    required this.menuItems,
-    required this.initialModuleId,
-  });
+  const _HomePage({required this.menuItems, required this.initialModuleId});
 
   @override
-  State<_HomePageScaffold> createState() => _HomePageScaffoldState();
+  State<_HomePage> createState() => _HomePageState();
 }
 
-class _HomePageScaffoldState extends State<_HomePageScaffold> {
-  final GlobalKey<HomePlaylistsState> _playlistsKey =
-      GlobalKey<HomePlaylistsState>();
+class _HomePageState extends State<_HomePage> {
+  final GlobalKey<PlaylistsState> _playlistsKey = GlobalKey<PlaylistsState>();
   late String _currentModuleId;
 
   @override
@@ -54,16 +47,13 @@ class _HomePageScaffoldState extends State<_HomePageScaffold> {
         .toString();
   }
 
-  void _selectModuleFromItem(dynamic item) {
+  void _setModuleId(dynamic item) {
     final String moduleId = _getModuleId(item);
     if (moduleId.isEmpty) return;
     setState(() {
       _currentModuleId = moduleId;
     });
   }
-
-  Duration _debounceDuration = const Duration(milliseconds: 500);
-  DateTime _lastLoadMore = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   Widget build(BuildContext context) {
@@ -76,11 +66,7 @@ class _HomePageScaffoldState extends State<_HomePageScaffold> {
             final current = notification.metrics.pixels;
             final max = notification.metrics.maxScrollExtent;
             if (current >= max * 0.8) {
-              final now = DateTime.now();
-              if (now.difference(_lastLoadMore) > _debounceDuration) {
-                _lastLoadMore = now;
-                _playlistsKey.currentState?.loadMore();
-              }
+              _playlistsKey.currentState?.loadMore();
             }
           }
           return false;
@@ -90,7 +76,7 @@ class _HomePageScaffoldState extends State<_HomePageScaffold> {
             children: [
               HomeMenuBar(
                 menuItems: widget.menuItems,
-                onSelectItem: _selectModuleFromItem,
+                onSelectItem: _setModuleId,
               ),
               HomeHeroCarousel(moduleId: _currentModuleId),
               HomePlaylists(key: _playlistsKey, moduleId: _currentModuleId),
