@@ -160,7 +160,8 @@ class _HomeVideosPlaylistState extends State<HomeVideosPlaylist> {
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           itemCount: displayList.length,
-          separatorBuilder: (_, __) => const SizedBox(width: _separatorWidth),
+          separatorBuilder: (context, index) =>
+              const SizedBox(width: _separatorWidth),
           itemBuilder: (context, index) {
             return _MovieCard(item: displayList[index]);
           },

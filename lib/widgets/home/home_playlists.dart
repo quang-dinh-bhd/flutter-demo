@@ -3,6 +3,8 @@ import '../../models/playlist_model.dart';
 import '../../services/main_services.dart';
 import 'home_videos_playlist.dart';
 
+enum LoadState { initial, loading, loadingMore, success, empty, end, error }
+
 class HomePlaylists extends StatefulWidget {
   static const int maxPlaylists = 5;
   final String moduleId;
@@ -16,10 +18,8 @@ class HomePlaylists extends StatefulWidget {
 class HomePlaylistsState extends State<HomePlaylists> {
   final MainServices _services = MainServices();
 
-  bool _isLoading = false;
-  bool _isLoadingMore = false;
-  bool _hasMorePlaylists = true;
-  int _nextPlaylistsPage = 1;
+  LoadState _state = LoadState.initial;
+  int _page = 1;
   List<PlaylistModel> _playlists = [];
 
   @override
@@ -39,39 +39,46 @@ class HomePlaylistsState extends State<HomePlaylists> {
 
   void _reset() {
     setState(() {
-      _isLoading = false;
-      _isLoadingMore = false;
-      _hasMorePlaylists = true;
-      _nextPlaylistsPage = 1;
+      _state = LoadState.initial;
+      _page = 1;
       _playlists = [];
     });
   }
 
   void loadMore() {
-    if (!_hasMorePlaylists || _isLoadingMore || _isLoading) return;
+    if (_state == LoadState.end ||
+        _state == LoadState.loading ||
+        _state == LoadState.loadingMore) {
+      return;
+    }
+
     _fetchPlaylists(append: true);
   }
 
   Future<void> _fetchPlaylists({bool append = false}) async {
-    if (widget.moduleId.isEmpty || !_hasMorePlaylists && append) return;
-    if (_isLoadingMore) return;
+    if (widget.moduleId.isEmpty) return;
+    if (append && _state == LoadState.end) return;
+    if (_state == LoadState.loadingMore) return;
+
+    final currentModule = widget.moduleId;
+    const int pageLimit = 10;
 
     if (!append) {
       setState(() {
-        _isLoading = true;
-        _hasMorePlaylists = true;
-        _nextPlaylistsPage = 1;
+        _state = LoadState.loading;
+        _page = 1;
         _playlists = [];
+      });
+    } else {
+      setState(() {
+        _state = LoadState.loadingMore;
       });
     }
 
-    _isLoadingMore = true;
-
-    const int pageLimit = 10;
     try {
-      final page = append ? _nextPlaylistsPage : 1;
+      final page = append ? _page : 1;
       final results = await _services.getPlaylists(
-        widget.moduleId,
+        currentModule,
         page: page,
         limit: pageLimit,
       );
@@ -85,28 +92,27 @@ class HomePlaylistsState extends State<HomePlaylists> {
       }).toList();
 
       setState(() {
-        if (append) {
-          _playlists.addAll(newItems);
-        } else {
-          _playlists = newItems;
-        }
+        _playlists = append ? [..._playlists, ...newItems] : newItems;
+        _page = page + 1;
 
-        _isLoading = false;
-        _nextPlaylistsPage = page + 1;
-        _hasMorePlaylists = newItems.length >= pageLimit;
+        if (!append) {
+          if (newItems.isEmpty) {
+            _state = LoadState.empty;
+          } else {
+            _state = newItems.length >= pageLimit ? LoadState.success : LoadState.end;
+          }
+        } else {
+          _state = newItems.length >= pageLimit ? LoadState.success : LoadState.end;
+        }
       });
 
       for (final p in newItems) {
         _fetchVideos(p);
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasMorePlaylists = false;
-      });
+      if (!mounted || widget.moduleId != currentModule) return;
+      setState(() => _state = append ? LoadState.end : LoadState.error);
     }
-
-    _isLoadingMore = false;
   }
 
   Future<void> _fetchVideos(
@@ -153,7 +159,7 @@ class HomePlaylistsState extends State<HomePlaylists> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_state == LoadState.loading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 16),
         child: Center(child: CircularProgressIndicator()),
@@ -167,10 +173,17 @@ class HomePlaylistsState extends State<HomePlaylists> {
       );
     }
 
-    if (_playlists.isEmpty) {
+    if (_state == LoadState.empty) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 16),
         child: Center(child: Text("Không có playlist")),
+      );
+    }
+
+    if (_state == LoadState.error) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(child: Text("Có lỗi xảy ra")),
       );
     }
 
@@ -179,7 +192,7 @@ class HomePlaylistsState extends State<HomePlaylists> {
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       itemCount: _playlists.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 28),
+      separatorBuilder: (context, index) => const SizedBox(height: 28),
       itemBuilder: (context, index) {
         final p = _playlists[index];
 
