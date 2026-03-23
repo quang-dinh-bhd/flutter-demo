@@ -35,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
       int latestVersion = latestData['version'];
       int isRequired = latestData['is_required'] ?? 0;
-      bool versionExists = await _services.checkVersionExists(currentVersion);
+      bool versionExists = await _services.checkVersion(currentVersion);
 
       if (currentVersion == latestVersion ||
           (currentVersion > latestVersion && versionExists)) {

@@ -20,7 +20,7 @@ class MainServices {
     return null;
   }
 
-  Future<bool> checkVersionExists(int version) async {
+  Future<bool> checkVersion(int version) async {
     try {
       final response = await http.get(
         Uri.parse('${ApiConstants.baseUrl}/releases/$version'),
@@ -97,7 +97,7 @@ class MainServices {
     }
   }
 
-  Future<List<dynamic>> getVideosByPlaylist(
+  Future<List<dynamic>> getVideos(
     String playlistId, {
     int? page,
     int? limit,

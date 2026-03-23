@@ -130,7 +130,7 @@ class PlaylistsState extends State<HomePlaylists> {
     });
 
     try {
-      final movies = await _services.getVideosByPlaylist(
+      final movies = await _services.getVideos(
         playlist.id,
         page: playlist.page,
         limit: 10,
@@ -150,7 +150,7 @@ class PlaylistsState extends State<HomePlaylists> {
     }
   }
 
-  Future<void> _loadMoreVideos(String id) async {
+  Future<void> _loadMore(String id) async {
     final playlist = _playlists.firstWhere(
       (e) => e.id == id,
       orElse: () => PlaylistModel(id: '', name: ''),
@@ -206,7 +206,7 @@ class PlaylistsState extends State<HomePlaylists> {
           isLoadingMovies: p.isLoadingMovies,
           infiniteLoop: p.infiniteLoop,
           hasMore: p.hasMore,
-          onLoadMore: _loadMoreVideos,
+          onLoadMore: _loadMore,
         );
       },
     );
